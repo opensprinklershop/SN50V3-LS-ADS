@@ -40,6 +40,30 @@ Der ADS1115 wird an die 11-polige Klemmleiste des SN50V3-LB angeschlossen. Der A
 *   **I2C Pull-Up Widerstände**: Stellen Sie sicher, dass auf Ihrem ADS1115-Breakout-Board bereits Pull-Up-Widerstände (z.B. 4.7kΩ oder 10kΩ nach 5V/3.3V) für SDA und SCL verbaut sind. Falls nicht, müssen diese extern hinzugefügt werden.
 *   **Referenzspannung & Signalpegel**: Da der ADS1115 hier mit 5V versorgt wird, ist die Spannungsversorgung vollständig 5V-konform. An den analogen Eingängen des ADS1115 dürfen Spannungen von bis zu 5V (maximal 5.3V) anliegen. Die Pegel der I2C-Leitungen (SDA/SCL) sind dank Open-Drain-Schaltung auf der MCU-Seite 3.3V-kompatibel (die meisten ADS1115-Boards funktionieren problemlos direkt mit den 3.3V-I2C-Leitungen des SN50V3-LB).
 
+### 2.1 Sonderfall: Anschluss von 2 Truebner SMT50 Sensoren
+
+Der **Truebner SMT50** ist ein hochpräziser Sensor, der gleichzeitig Bodenfeuchte und Bodentemperatur als analoge Spannungssignale ausgibt. Da für zwei SMT50-Sensoren insgesamt **4 analoge Kanäle** benötigt werden, können diese perfekt an die 4 Eingänge (A0–A3) des ADS1115 angeschlossen werden.
+
+#### Aderbelegung des Truebner SMT50:
+*   **Braun**: Stromversorgung (VCC, 3.3V bis 30V DC)
+*   **Weiß**: Masse (GND)
+*   **Gelb**: Analogausgang Bodenfeuchte (0..3 V entspricht 0..50% volumetric water content / VWC)
+*   **Grün**: Analogausgang Temperatur (0..3 V entspricht -40 °C bis +60 °C)
+
+#### Anschlussbelegung für 2x SMT50 am SN50V3-LB / ADS1115:
+Beide Sensoren werden über den geschalteten 5V-Ausgang (Klemme 2) des SN50V3-LB versorgt. Das spart im Schlafmodus Energie und schützt die Sensoren.
+
+| Sensor | Aderfarbe | Signaltyp | ADS1115 Pin / Kanal | SN50 Klemme | Beschreibung |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| **Sensor 1** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Gemeinsame Stromversorgung |
+| **Sensor 1** | **Weiß** | Ground (GND) | - | **11** (GND) | Gemeinsame Masse |
+| **Sensor 1** | **Gelb** | Bodenfeuchte | **A0** | - | Messkanal Bodenfeuchte SMT50 #1 |
+| **Sensor 1** | **Grün** | Temperatur | **A1** | - | Messkanal Temperatur SMT50 #1 |
+| **Sensor 2** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Gemeinsame Stromversorgung |
+| **Sensor 2** | **Weiß** | Ground (GND) | - | **11** (GND) | Gemeinsame Masse |
+| **Sensor 2** | **Gelb** | Bodenfeuchte | **A2** | - | Messkanal Bodenfeuchte SMT50 #2 |
+| **Sensor 2** | **Grün** | Temperatur | **A3** | - | Messkanal Temperatur SMT50 #2 |
+
 ---
 
 ## 3. LoRaWAN Payload-Format (14 Bytes)
@@ -55,6 +79,20 @@ Jeder Uplink besteht aus exakt **14 Bytes** im Big-Endian-Format (MSB zuerst).
 | **8 - 9** | ADS1115 Kanal 1 | `int16` | `0` bis `32767` | Raw-Wert ADS1115 A1 (0V = 0, 5V = 32767) |
 | **10 - 11**| ADS1115 Kanal 2 | `int16` | `0` bis `32767` | Raw-Wert ADS1115 A2 (0V = 0, 5V = 32767) |
 | **12 - 13**| ADS1115 Kanal 3 | `int16` | `0` bis `32767` | Raw-Wert ADS1115 A3 (0V = 0, 5V = 32767) |
+
+### 3.1 Payload-Mapping für 2x Truebner SMT50
+
+Wenn zwei Truebner SMT50-Sensoren wie in Abschnitt 2.1 beschrieben an den ADS1115 angeschlossen sind, ordnen sich die Bytes wie folgt zu:
+
+| Byte-Index | Name | Datentyp | SMT50 Zuordnung | Beschreibung / Wertebereich |
+| :---: | :--- | :---: | :---: | :--- |
+| **0 - 1** | Batterie-Spannung | `uint16` | - | Batteriespannung in Millivolt (mV) |
+| **2 - 3** | ADC1 (PA4) | `uint16` | - | Interner Analogwert PA4 (freier Eingang, in mV) |
+| **4 - 5** | ADC3 (PA8) | `uint16` | - | Interner Analogwert PA8 (freier Eingang, in mV) |
+| **6 - 7** | ADS1115 Kanal 0 | `int16` | **SMT50 #1 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
+| **8 - 9** | ADS1115 Kanal 1 | `int16` | **SMT50 #1 Temperatur** | Raw-Wert (0.1V = 800, 1.1V = 8796, entspricht -40 bis +60 °C) |
+| **10 - 11**| ADS1115 Kanal 2 | `int16` | **SMT50 #2 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
+| **12 - 13**| ADS1115 Kanal 3 | `int16` | **SMT50 #2 Temperatur** | Raw-Wert (0.1V = 800, 1.1V = 8796, entspricht -40 bis +60 °C) |
 
 ---
 
@@ -116,6 +154,81 @@ decoded.ads1115_a0_mv = (ch0_raw === -1) ? null : Math.round((ch0_raw / 32767.0)
 decoded.ads1115_a1_mv = (ch1_raw === -1) ? null : Math.round((ch1_raw / 32767.0) * 5000.0);
 decoded.ads1115_a2_mv = (ch2_raw === -1) ? null : Math.round((ch2_raw / 32767.0) * 5000.0);
 decoded.ads1115_a3_mv = (ch3_raw === -1) ? null : Math.round((ch3_raw / 32767.0) * 5000.0);
+  }
+
+  return {
+data: decoded,
+warnings: [],
+errors: []
+  };
+}
+```
+
+### 4.1 JavaScript Decoder für 2x Truebner SMT50 (TTN v3 Payload Formatter)
+
+Wenn zwei Truebner SMT50-Sensoren angeschlossen sind, konvertiert der folgende Decoder die Rohwerte direkt in Bodenfeuchte (% VWC) und Temperatur (°C).
+
+Dabei wird die korrekte Gain-Skalierung des ADS1115 (PGA = 001, d.h. ±4.096 V Messbereich) berücksichtigt:
+*   **Formel Spannung:** $V = \frac{\text{Raw}}{32767.0} \times 4.096$
+*   **Formel Bodenfeuchte:** $\text{Feuchtigkeit (\% VWC)} = V \times \frac{50}{3} = \frac{\text{Raw}}{32767.0} \times 68.267$
+*   **Formel Temperatur:** $\text{Temperatur (°C)} = (V - 0.5) \times 100 = \left(\frac{\text{Raw}}{32767.0} \times 409.6\right) - 50.0$
+
+```javascript
+function decodeUplink(input) {
+  var bytes = input.bytes;
+  var decoded = {};
+
+  if (bytes.length === 14) {
+// 1. Batterie-Spannung (mV)
+decoded.battery_mv = (bytes[0] << 8) | bytes[1];
+
+// 2. Interner ADC1 (PA4) in mV
+decoded.adc_pa4_mv = (bytes[2] << 8) | bytes[3];
+
+// 3. Interner ADC3 (PA8) in mV
+decoded.adc_pa8_mv = (bytes[4] << 8) | bytes[5];
+
+// Hilfsfunktion für signed 16-bit
+function readInt16(b1, b2) {
+  var val = (b1 << 8) | b2;
+  return val >= 0x8000 ? val - 0x10000 : val;
+}
+
+// ADS1115 Kanäle auslesen (PGA = ±4.096V Full Scale)
+var ch0_raw = readInt16(bytes[6], bytes[7]);   // SMT50 #1 Bodenfeuchte (Gelb)
+var ch1_raw = readInt16(bytes[8], bytes[9]);   // SMT50 #1 Temperatur (Grün)
+var ch2_raw = readInt16(bytes[10], bytes[11]); // SMT50 #2 Bodenfeuchte (Gelb)
+var ch3_raw = readInt16(bytes[12], bytes[13]); // SMT50 #2 Temperatur (Grün)
+
+// Berechnung und Validierung für Sensor 1
+if (ch0_raw === -1 || ch0_raw === 0xFFFF) {
+  decoded.smt50_1_moisture_vwc = null;
+} else {
+  var moisture1 = (ch0_raw / 32767.0) * 68.2667;
+  decoded.smt50_1_moisture_vwc = parseFloat(moisture1.toFixed(2));
+}
+
+if (ch1_raw === -1 || ch1_raw === 0xFFFF) {
+  decoded.smt50_1_temp_c = null;
+} else {
+  var temp1 = ((ch1_raw / 32767.0) * 409.6) - 50.0;
+  decoded.smt50_1_temp_c = parseFloat(temp1.toFixed(1));
+}
+
+// Berechnung und Validierung für Sensor 2
+if (ch2_raw === -1 || ch2_raw === 0xFFFF) {
+  decoded.smt50_2_moisture_vwc = null;
+} else {
+  var moisture2 = (ch2_raw / 32767.0) * 68.2667;
+  decoded.smt50_2_moisture_vwc = parseFloat(moisture2.toFixed(2));
+}
+
+if (ch3_raw === -1 || ch3_raw === 0xFFFF) {
+  decoded.smt50_2_temp_c = null;
+} else {
+  var temp2 = ((ch3_raw / 32767.0) * 409.6) - 50.0;
+  decoded.smt50_2_temp_c = parseFloat(temp2.toFixed(1));
+}
   }
 
   return {

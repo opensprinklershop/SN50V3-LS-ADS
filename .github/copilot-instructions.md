@@ -36,6 +36,14 @@ The purpose of this firmware is to read **4 analog channels** via an external **
         *   `Bytes 10-11`: ADS1115 A2 (raw 16-bit signed)
         *   `Bytes 12-13`: ADS1115 A3 (raw 16-bit signed)
 
+*   **Dual SMT50 Use Case (Truebner Soil Moisture & Temperature)**:
+    *   The 4 channels can be mapped to **two Truebner SMT50 sensors** (each has VCC=Brown, GND=White, Moisture [0-3V]=Yellow, Temperature [0-3V]=Green):
+        *   Both powered via **Pin 2** (+5V switched power output) and grounded to **Pin 11** (GND).
+        *   `Bytes 6-7` (ADS1115 A0): **SMT50 #1 Soil Moisture** (0V = 0, 3V = 23999, formula: `Moisture (% VWC) = (Raw / 32767.0) * 68.267`)
+        *   `Bytes 8-9` (ADS1115 A1): **SMT50 #1 Temperature** (0.1V = 800, 1.1V = 8796, formula: `Temp (°C) = ((Raw / 32767.0) * 409.6) - 50.0`)
+        *   `Bytes 10-11` (ADS1115 A2): **SMT50 #2 Soil Moisture** (0V = 0, 3V = 23999, formula: `Moisture (% VWC) = (Raw / 32767.0) * 68.267`)
+        *   `Bytes 12-13` (ADS1115 A3): **SMT50 #2 Temperature** (0.1V = 800, 1.1V = 8796, formula: `Temp (°C) = ((Raw / 32767.0) * 409.6) - 50.0`)
+
 ---
 
 ## 3. Key Conventions & Coding Patterns
