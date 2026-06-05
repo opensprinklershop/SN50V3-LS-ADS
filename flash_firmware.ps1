@@ -1,14 +1,14 @@
-# Dragino SN50V3-LB - Automatic Build & Flash Script for ADS1115 Firmware
+# Dragino SN50V3-LS - Automatic Build & Flash Script for ADS1115 Firmware
 $ErrorActionPreference = "Stop"
 
 # Configurations
 $port = "COM3"
 $baud = 115200
 $address = "0x0800D000"
-$sdkPath = "D:\projekte\Dragino-SN50V3-LB"
+$sdkPath = "D:\projekte\Dragino-SN50V3-LS"
 $toolchainUrl = "https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2020q2/gcc-arm-none-eabi-9-2020-q2-update-win32.zip"
-$toolchainZip = "$sdkPath\tools\gcc-arm-none-eabi.zip"
-$toolchainDir = "$sdkPath\tools\toolchain"
+$toolchainZip = "D:\projekte\Dragino-SN50V3-LB\tools\gcc-arm-none-eabi.zip"
+$toolchainDir = "D:\projekte\Dragino-SN50V3-LB\tools\toolchain"
 
 # Create tools directory if it doesn't exist
 if (!(Test-Path "$sdkPath\tools")) {
@@ -37,7 +37,7 @@ Write-Host "Compiling firmware inside Git Bash environment..." -ForegroundColor 
 
 # We use Git Bash because the Makefile requires unix utilities like uname and realpath
 $gitBash = "C:\Program Files\Git\bin\bash.exe"
-$bashCommand = "export PATH=`"/d/projekte/Dragino-SN50V3-LB/tools/toolchain/bin:`$PATH`" ; export TREMO_SDK_PATH=`"/d/projekte/Dragino-SN50V3-LB`" ; cd /d/projekte/Dragino-SN50V3-LB/Projects/Applications/DRAGINO-LRWAN-AT ; mingw32-make.exe clean ; mingw32-make.exe"
+$bashCommand = "export PATH=`"/d/projekte/Dragino-SN50V3-LB/tools/toolchain/bin:`$PATH`" ; export TREMO_SDK_PATH=`"/d/projekte/Dragino-SN50V3-LS`" ; cd /d/projekte/Dragino-SN50V3-LS/Projects/Applications/DRAGINO-LRWAN-AT ; mingw32-make.exe clean ; mingw32-make.exe"
 
 & $gitBash -c $bashCommand
 

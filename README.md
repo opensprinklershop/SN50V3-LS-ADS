@@ -1,10 +1,10 @@
-# Dragino SN50V3-LB ADS1115 Firmware
+# Dragino SN50V3-LS ADS1115 Firmware (Solar Edition)
 
-Dieses Repository enthält die modifizierte Open-Source-Firmware für das **Dragino SN50V3-LB** LoRaWAN-Sensor-Modul. 
+Dieses Repository enthält die modifizierte Open-Source-Firmware für das **Dragino SN50V3-LS** LoRaWAN-Sensor-Modul mit Solar-Ladeunterstützung. 
 
 Die Firmware wurde speziell für das Auslesen von **4 zusätzlichen analogen Messkanälen** über einen externen **ADS1115 16-Bit ADC** angepasst. Zu diesem Zweck bedient sie primär die I2C-Schnittstelle.
 
-Das Projekt wird auf GitHub unter **[OpenSprinklerShop/SN50V3-LB-ADS](https://github.com/OpenSprinklerShop/SN50V3-LB-ADS)** publiziert.
+Das Projekt wird auf GitHub unter **[OpenSprinklerShop/SN50V3-LS-ADS](https://github.com/OpenSprinklerShop/SN50V3-LS-ADS)** publiziert.
 
 ---
 
@@ -18,7 +18,7 @@ Das Projekt wird auf GitHub unter **[OpenSprinklerShop/SN50V3-LB-ADS](https://gi
 
 ## 2. Hardware-Anschluss & Verkabelung
 
-Der ADS1115 wird an die 11-polige Klemmleiste des SN50V3-LB angeschlossen. Der ADS1115 benötigt 5V Betriebsspannung und wird über den geschalteten Pin 2 versorgt. Um Energie zu sparen und Einschaltströme zu stabilisieren, schaltet die Firmware den 5V-Pin **1000ms** vor der Messung ein und schaltet ihn direkt nach der Messung wieder aus.
+Der ADS1115 wird an die 11-polige Klemmleiste des SN50V3-LS angeschlossen. Der ADS1115 benötigt 5V Betriebsspannung und wird über den geschalteten Pin 2 versorgt. Um Energie zu sparen und Einschaltströme zu stabilisieren, schaltet die Firmware den 5V-Pin **1000ms** vor der Messung ein und schaltet ihn direkt nach der Messung wieder aus.
 
 ### Anschlussbelegung (Pinout)
 
@@ -38,7 +38,7 @@ Der ADS1115 wird an die 11-polige Klemmleiste des SN50V3-LB angeschlossen. Der A
 
 ### Wichtige Hardware-Hinweise:
 *   **I2C Pull-Up Widerstände**: Stellen Sie sicher, dass auf Ihrem ADS1115-Breakout-Board bereits Pull-Up-Widerstände (z.B. 4.7kΩ oder 10kΩ nach 5V/3.3V) für SDA und SCL verbaut sind. Falls nicht, müssen diese extern hinzugefügt werden.
-*   **Referenzspannung & Signalpegel**: Da der ADS1115 hier mit 5V versorgt wird, ist die Spannungsversorgung vollständig 5V-konform. An den analogen Eingängen des ADS1115 dürfen Spannungen von bis zu 5V (maximal 5.3V) anliegen. Die Pegel der I2C-Leitungen (SDA/SCL) sind dank Open-Drain-Schaltung auf der MCU-Seite 3.3V-kompatibel (die meisten ADS1115-Boards funktionieren problemlos direkt mit den 3.3V-I2C-Leitungen des SN50V3-LB).
+*   **Referenzspannung & Signalpegel**: Da der ADS1115 hier mit 5V versorgt wird, ist die Spannungsversorgung vollständig 5V-konform. An den analogen Eingängen des ADS1115 dürfen Spannungen von bis zu 5V (maximal 5.3V) anliegen. Die Pegel der I2C-Leitungen (SDA/SCL) sind dank Open-Drain-Schaltung auf der MCU-Seite 3.3V-kompatibel (die meisten ADS1115-Boards funktionieren problemlos direkt mit den 3.3V-I2C-Leitungen des SN50V3-LS).
 
 ### 2.1 Sonderfall: Anschluss von 2 Truebner SMT50 Sensoren
 
@@ -50,8 +50,8 @@ Der **Truebner SMT50** ist ein hochpräziser Sensor, der gleichzeitig Bodenfeuch
 *   **Gelb**: Analogausgang Bodenfeuchte (0..3 V entspricht 0..50% volumetric water content / VWC)
 *   **Grün**: Analogausgang Temperatur (0..3 V entspricht -40 °C bis +60 °C)
 
-#### Anschlussbelegung für 2x SMT50 am SN50V3-LB / ADS1115:
-Beide Sensoren werden über den geschalteten 5V-Ausgang (Klemme 2) des SN50V3-LB versorgt. Das spart im Schlafmodus Energie und schützt die Sensoren.
+#### Anschlussbelegung für 2x SMT50 am SN50V3-LS / ADS1115:
+Beide Sensoren werden über den geschalteten 5V-Ausgang (Klemme 2) des SN50V3-LS versorgt. Das spart im Schlafmodus Energie und schützt die Sensoren.
 
 | Sensor | Aderfarbe | Signaltyp | ADS1115 Pin / Kanal | SN50 Klemme | Beschreibung |
 | :--- | :--- | :--- | :---: | :---: | :--- |
