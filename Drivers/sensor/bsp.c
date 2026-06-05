@@ -206,14 +206,86 @@ void BSP_sensor_Init( void  )
 	 NVIC_EnableIRQ(GPIO_IRQn);	
 }
 
+uint16_t ADS1115_Read_Channel(uint8_t channel)
+{
+	uint8_t config_hi = 0;
+	uint8_t config_lo = 0x83; // 128 SPS, Single-shot, disable comparator
+	
+	// Select channel (Single-ended to GND)
+	// 0: AIN0 vs GND -> MUX = 100
+	// 1: AIN1 vs GND -> MUX = 101
+	// 2: AIN2 vs GND -> MUX = 110
+	// 3: AIN3 vs GND -> MUX = 111
+	// We use PGA = 001 for +/- 4.096V full scale range
+	switch(channel)
+	{
+		case 0: config_hi = 0xC3; break; // 1(OS) + 100(MUX) + 001(PGA) + 1(Mode)
+		case 1: config_hi = 0xD3; break; // 1(OS) + 101(MUX) + 001(PGA) + 1(Mode)
+		case 2: config_hi = 0xE3; break; // 1(OS) + 110(MUX) + 001(PGA) + 1(Mode)
+		case 3: config_hi = 0xF3; break; // 1(OS) + 111(MUX) + 001(PGA) + 1(Mode)
+		default: return 0;
+	}
+	
+	uint8_t config_buf[2] = {config_hi, config_lo};
+	if (I2C_Write_reg_Len(0x48, 0x01, 2, config_buf) != 0)
+	{
+		return 0xFFFF;
+	}
+	
+	delay_ms(15);
+	
+	uint8_t data_buf[2] = {0, 0};
+	if (I2C_Read_reg_Len(0x48, 0x00, 2, data_buf) != 0)
+	{
+		return 0xFFFF;
+	}
+	
+	return (data_buf[0] << 8) | data_buf[1];
+}
+
+void ADS1115_Read_All(sensor_t *sensor_data, uint8_t message)
+{
+	I2C_GPIO_MODE_Config();
+	delay_ms(5);
+	
+	sensor_data->ads1115_ch0 = ADS1115_Read_Channel(0);
+	sensor_data->ads1115_ch1 = ADS1115_Read_Channel(1);
+	sensor_data->ads1115_ch2 = ADS1115_Read_Channel(2);
+	sensor_data->ads1115_ch3 = ADS1115_Read_Channel(3);
+	
+	I2C_GPIO_MODE_ANALOG();
+	
+	if (message == 1)
+	{
+		if (sensor_data->ads1115_ch0 == 0xFFFF && 
+			sensor_data->ads1115_ch1 == 0xFFFF && 
+			sensor_data->ads1115_ch2 == 0xFFFF && 
+			sensor_data->ads1115_ch3 == 0xFFFF)
+		{
+			LOG_PRINTF(LL_DEBUG, "ADS1115 Connection Status: FAILED (Check Address 0x48, Pin 4 SCL, Pin 5 SDA, Pin 2 +5V!)\r\n");
+		}
+		else
+		{
+			LOG_PRINTF(LL_DEBUG, "ADS1115 Connection Status: SUCCESS (ADS1115 Detected!)\r\n");
+			delay_ms(20);
+			LOG_PRINTF(LL_DEBUG, "ADS1115 Ch0:%d, Ch1:%d, Ch2:%d, Ch3:%d\r\n", 
+					   (int16_t)sensor_data->ads1115_ch0, 
+					   (int16_t)sensor_data->ads1115_ch1, 
+					   (int16_t)sensor_data->ads1115_ch2, 
+					   (int16_t)sensor_data->ads1115_ch3);
+		}
+		delay_ms(20);
+	}
+}
+
 void BSP_sensor_Read( sensor_t *sensor_data , uint8_t message ,uint8_t mod_temp)
 {		
 	delay_ms(50);
 	iwdg_reload();
-  sensor_data->bat_mv=battery_voltage_measurement();
-  if((sensor_data->bat_mv>4300)||(sensor_data->bat_mv<2500)||(sensor_data->bat_mv-bat_record>200)||(bat_record-sensor_data->bat_mv>200))
+	sensor_data->bat_mv=battery_voltage_measurement();
+	if((sensor_data->bat_mv>4300)||(sensor_data->bat_mv<2500)||(sensor_data->bat_mv-bat_record>200)||(bat_record-sensor_data->bat_mv>200))
 	{
-	  sensor_data->bat_mv=battery_voltage_measurement();
+		sensor_data->bat_mv=battery_voltage_measurement();
 		
 		if((sensor_data->bat_mv>4300)||(sensor_data->bat_mv<2500))
 		{
@@ -234,263 +306,17 @@ void BSP_sensor_Read( sensor_t *sensor_data , uint8_t message ,uint8_t mod_temp)
 		bat_record=sensor_data->bat_mv;
 	}
 
-  if(message==1)
+	if(message==1)
 	{				
 		LOG_PRINTF(LL_DEBUG,"\r\nBat_voltage:%d mv\n\r",sensor_data->bat_mv);
-    delay_ms(20);				
+		delay_ms(20);				
 	}	
 			
-  if(mod_temp==1)
-	{
-		sensor_data->exit_pa8=Digital_input_Read(2,message);
-		sensor_data->temp1=DS18B20_Read(1,message);
-    I2C_read_data(sensor_data,flags,message);
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_4=ADC_Read(1,message);
-		sensor_data->in1=Digital_input_Read(3,message);		
-	}	
-	else if(mod_temp==2)
-	{
-		sensor_data->exit_pa8=Digital_input_Read(2,message);
-		sensor_data->temp1=DS18B20_Read(1,message);
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_4=ADC_Read(1,message);
-		sensor_data->in1=Digital_input_Read(3,message);		
-	  if(mode2_flag==1)
-		{
-			I2C_GPIO_MODE_Config();
-			LidarLite_init();			 
-			sensor_data->distance_mm=LidarLite();	
-			I2C_GPIO_MODE_ANALOG();	
-			if(message==1)
-			{				
-				LOG_PRINTF(LL_DEBUG,"lidar_lite_distance:%d cm\r\n",(sensor_data->distance_mm/10));
-        delay_ms(20);				
-			}				
-		}
-		else if(mode2_flag==2)
-		{
-			GPIO_ULT_INPUT_Init();
-			GPIO_ULT_OUTPUT_Init();	
-			sensor_data->distance_mm=ULT_test();
-			GPIO_ULT_INPUT_DeInit();
-			GPIO_ULT_OUTPUT_DeInit();	
-			if(message==1)
-			{	
-				LOG_PRINTF(LL_DEBUG,"ULT_distance:%.1f cm\r\n",(sensor_data->distance_mm/10.0));
-				delay_ms(20);	
-			}
-		}		
-    else if(mode2_flag==3)
-		{
-			tfsensor_reading_t reading_t;
-			tfsensor_read_distance(&reading_t);	
-		  sensor_data->distance_mm = reading_t.distance_cm;		
-			sensor_data->distance_signal_strengh = reading_t.distance_signal_strengh;		
-			if(message==1)
-			{	
-				LOG_PRINTF(LL_DEBUG,"TF_distance:%d cm,TF_strength:%d\r\n",(sensor_data->distance_mm/10),sensor_data->distance_signal_strengh);
-        delay_ms(20);				
-			}				
-		}
-		else
-		{
-			sensor_data->distance_mm = 65535;		
-			sensor_data->distance_signal_strengh = 65535;			
-		}    		
-	}
-	else if(mod_temp==3)
-	{
-		sensor_data->exit_pb15=Digital_input_Read(3,message);
-    I2C_read_data(sensor_data,flags,message);		
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_4=ADC_Read(1,message);
-		delay_ms(50);
-		sensor_data->ADC_5=ADC_Read(2,message);	
-		delay_ms(50);
-    sensor_data->ADC_8=ADC_Read(3,message);					
-	}
-	else if(mod_temp==4)
-	{
-		sensor_data->exit_pa8=Digital_input_Read(2,message);
-		sensor_data->temp1=DS18B20_Read(1,message);
-		sensor_data->temp2=DS18B20_Read(2,message);
-		sensor_data->temp3=DS18B20_Read(3,message);
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_4=ADC_Read(1,message);
-		sensor_data->in1=Digital_input_Read(3,message);							
-	}
-	else if(mod_temp==5)
-	{
-		sensor_data->exit_pa8=Digital_input_Read(2,message);	
-		sensor_data->temp1=DS18B20_Read(1,message);
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_4=ADC_Read(1,message);
-		sensor_data->in1=Digital_input_Read(3,message);			
-		WEIGHT_SCK_Init();
-		WEIGHT_DOUT_Init();		 
-		sensor_data->Weight=Get_Weight();		
-		WEIGHT_SCK_DeInit();
-		WEIGHT_DOUT_DeInit();			
-		if(message==1)
-		{	
-			LOG_PRINTF(LL_DEBUG,"HX711_Weight:%d g\r\n",(int)sensor_data->Weight);
-			delay_ms(20);
-		}    		
-	}
-	else if(mod_temp==6)
-	{
-		sensor_data->temp1=DS18B20_Read(1,message);
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_4=ADC_Read(1,message);
-		sensor_data->in1=Digital_input_Read(3,message);	
-    sensor_data->count_pa8=count1;
-		if(message==1)
-		{	
-			LOG_PRINTF(LL_DEBUG,"PA8_count:%u\r\n",(unsigned int)count1);
-			delay_ms(20);
-		}      		
-	}
-	else if(mod_temp==7)
-	{
-		sensor_data->exit_pa4=Digital_input_Read(1,message);	
-		sensor_data->exit_pa8=Digital_input_Read(2,message);	
-		sensor_data->exit_pb15=Digital_input_Read(3,message);
-		sensor_data->temp1=DS18B20_Read(1,message);
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_5=ADC_Read(2,message);	
-	}
-	else if(mod_temp==8)
-	{
-    sensor_data->exit_pb15=Digital_input_Read(3,message);		
-		sensor_data->temp1=DS18B20_Read(1,message);
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_4=ADC_Read(1,message);
-		delay_ms(50);
-		sensor_data->ADC_5=ADC_Read(2,message);
-		delay_ms(50);		
-    sensor_data->ADC_8=ADC_Read(3,message);				
-	}
-	else if(mod_temp==9)
-	{
-		sensor_data->exit_pb15=Digital_input_Read(3,message);	
-		sensor_data->temp1=DS18B20_Read(1,message);
-		sensor_data->temp2=DS18B20_Read(2,message);
-		sensor_data->temp3=DS18B20_Read(3,message);
-		POWER_open_time(power_5v_time);
-    sensor_data->count_pa4=count2;
-    sensor_data->count_pa8=count1;		
-		if(message==1)
-		{	
-			LOG_PRINTF(LL_DEBUG,"PA8_count:%u\r\n",(unsigned int)count1);
-			LOG_PRINTF(LL_DEBUG,"PA4_count:%u\r\n",(unsigned int)count2);
-			delay_ms(40);
-		}     		
-	}	
-	else if(workmode==10)
-	{
-		sensor_data->exit_pa8=Digital_input_Read(2,message);
-		sensor_data->temp1=DS18B20_Read(1,message);
-		POWER_open_time(power_5v_time);		
-		sensor_data->ADC_4=ADC_Read(1,message);
-		sensor_data->in1=Digital_input_Read(3,message);	
-		
-    icnumber=0;
-    for(uint8_t y=0;y<4;y++)
-		{
-			IC1[y]=0;
-			IC2[y]=0;
-		}		
-	  gptimer_pwm_input_capture(pwm_timer);
-		if(pwm_timer==0)
-		{
-			delay_ms(500);
-		}
-		else
-		{
-			delay_ms(1500);
-		}
-		gptimer_pwm_Iodeinit();		
-		
-		if(middle_value(IC1)!=0)
-		{
-			sensor_data->pwm_freq = middle_value(IC1)+1;	
-		}	
-    else
-		{			
-      sensor_data->pwm_freq = 0;	
-		}
-
-		if(middle_value(IC2)!=0)
-		{
-			sensor_data->pwm_duty = middle_value(IC2)+1;
-		}
-		else
-		{
-			sensor_data->pwm_duty = 0;
-		}
-		
-		if(message==1)
-		{	
-			if(pwm_timer==0)
-			{
-				LOG_PRINTF(LL_DEBUG,"PWM_pulse_period: %d us\r\n",sensor_data->pwm_freq);
-				LOG_PRINTF(LL_DEBUG,"PWM_high_level_time: %d us\r\n",sensor_data->pwm_duty);
-			}
-			else
-			{
-				LOG_PRINTF(LL_DEBUG,"PWM_pulse_period: %d ms\r\n",sensor_data->pwm_freq);
-				LOG_PRINTF(LL_DEBUG,"PWM_high_level_time: %d ms\r\n",sensor_data->pwm_duty);				
-			}
-			delay_ms(40);
-		} 		
-	}
-  else if(mod_temp==11)
-	{
-		sensor_data->exit_pa8=Digital_input_Read(2,message);
-		sensor_data->temp1=DS18B20_Read(1,message);
-		TMP117_I2C_GPIO_MODE_Config();
-		sensor_data->temp_tmp117=get_tmp117_temp();
-		
-		if(sensor_data->temp_tmp117-tmp117_temp_record>20 || sensor_data->temp_tmp117-tmp117_temp_record<-20)
-		{
-			TMP117_soft_reset();
-			sensor_data->temp_tmp117=get_tmp117_temp();
-		}
-		
-		if(sensor_data->temp_tmp117!=327.67)
-		{
-			tmp117_temp_record=sensor_data->temp_tmp117;
-		}
-	
-		if(message==1)
-		{		
-			if(sensor_data->temp_tmp117!=327.67)
-			{			
-				LOG_PRINTF(LL_DEBUG,"TMP117_temp=%.2f\n\r",sensor_data->temp_tmp117);
-			}
-			else
-			{
-				LOG_PRINTF(LL_DEBUG,"TMP117_temp=NULL\n\r");				
-			}
-		}		
-		POWER_open_time(power_5v_time);
-		sensor_data->ADC_4=ADC_Read(1,message);
-		sensor_data->in1=Digital_input_Read(3,message);		
-	}		
-	else if(mod_temp==12)
-	{
-    I2C_read_data(sensor_data,flags,message);
-		POWER_open_time(power_5v_time);	
-		sensor_data->in1=Digital_input_Read(3,message);	
-    sensor_data->count_pa8=count1;
-		if(message==1)
-		{	
-			LOG_PRINTF(LL_DEBUG,"PA8_count:%u\r\n",(unsigned int)count1);
-			delay_ms(20);
-		}   		
-	}
-  POWER_IoDeInit();	
+	POWER_open_time(1000);
+	sensor_data->ADC_4 = ADC_Read(1, message); // Reads PA4 (ADC1)
+	sensor_data->ADC_8 = ADC_Read(3, message); // Reads PA8 (ADC3)
+	ADS1115_Read_All(sensor_data, message);   // Reads 4 ADS1115 channels
+	POWER_IoDeInit();	
 }
 
 uint16_t battery_voltage_measurement(void)

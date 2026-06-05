@@ -340,6 +340,7 @@ if __name__ == '__main__':
             print('The SN is: %s' % binascii.hexlify(sn))
     except Exception as e:
         print(str(e))
+        sys.exit(1)
 
 
 

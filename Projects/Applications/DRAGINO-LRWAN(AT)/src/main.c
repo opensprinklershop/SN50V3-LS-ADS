@@ -734,259 +734,30 @@ static void Send( void )
 	uint8_t i = 0;
 
 	AppData.Port = lora_config_application_port_get();	
-  if(workmode==1)
-	{		
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
 	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4);
+	// Pack 14-byte payload: Battery, ADC1 (PA4), ADC3 (PA8), and 4 channels of ADS1115
+	AppData.Buff[i++] = (bsp_sensor_data_buff.bat_mv >> 8) & 0xFF;
+	AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
 
-		AppData.Buff[i++]=(bsp_sensor_data_buff.exit_pa8<<7)|(bsp_sensor_data_buff.in1<<1)|(exit_temp&0x01);
-	
-		if(bh1750flags==1)
-		{
-			AppData.Buff[i++] =(bsp_sensor_data_buff.illuminance)>>8;      
-			AppData.Buff[i++] =(bsp_sensor_data_buff.illuminance);
-			AppData.Buff[i++] = 0x00;   
-			AppData.Buff[i++] = 0x00;				
-		}	
-		else
-		{
-			AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp_sht*10)>>8;      
-			AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp_sht*10);
-			AppData.Buff[i++] =(int)(bsp_sensor_data_buff.hum_sht*10)>>8;   
-			AppData.Buff[i++] =(int)(bsp_sensor_data_buff.hum_sht*10);
-		}
-	}
-	else if(workmode==2)
-	{
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int) bsp_sensor_data_buff.ADC_4;
+	AppData.Buff[i++] = ((uint16_t)bsp_sensor_data_buff.ADC_4 >> 8) & 0xFF;
+	AppData.Buff[i++] = (uint16_t)bsp_sensor_data_buff.ADC_4 & 0xFF;
 
-		AppData.Buff[i++]=(bsp_sensor_data_buff.exit_pa8<<7)|(bsp_sensor_data_buff.in1<<1)|0x04|(exit_temp&0x01);
+	AppData.Buff[i++] = ((uint16_t)bsp_sensor_data_buff.ADC_8 >> 8) & 0xFF;
+	AppData.Buff[i++] = (uint16_t)bsp_sensor_data_buff.ADC_8 & 0xFF;
 
-		AppData.Buff[i++]=(bsp_sensor_data_buff.distance_mm)>>8;
-		AppData.Buff[i++]=(bsp_sensor_data_buff.distance_mm);	
-		if(mode2_flag==3)
-		{
-		  AppData.Buff[i++]=(bsp_sensor_data_buff.distance_signal_strengh)>>8;
-		  AppData.Buff[i++]=(bsp_sensor_data_buff.distance_signal_strengh);				
-		}
-		else
-		{
-			AppData.Buff[i++] =0xff; 
-			AppData.Buff[i++] =0xff;
-		}			
-	}
-	else if(workmode==3)
-	{	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int) bsp_sensor_data_buff.ADC_4;
+	AppData.Buff[i++] = (bsp_sensor_data_buff.ads1115_ch0 >> 8) & 0xFF;
+	AppData.Buff[i++] = bsp_sensor_data_buff.ads1115_ch0 & 0xFF;
 
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_5)>>8;          
-		AppData.Buff[i++] =(int) bsp_sensor_data_buff.ADC_5;
-		
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_8)>>8;          
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_8);
-		
-		AppData.Buff[i++]=(bsp_sensor_data_buff.exit_pb15<<7)|0x08|(exit3_temp&0x01);
+	AppData.Buff[i++] = (bsp_sensor_data_buff.ads1115_ch1 >> 8) & 0xFF;
+	AppData.Buff[i++] = bsp_sensor_data_buff.ads1115_ch1 & 0xFF;
 
-		if(bh1750flags==1)
-		{
-			AppData.Buff[i++] =(bsp_sensor_data_buff.illuminance)>>8;      
-			AppData.Buff[i++] =(bsp_sensor_data_buff.illuminance);
-			AppData.Buff[i++] = 0x00;   
-			AppData.Buff[i++] = 0x00;				
-		}	
-		else
-		{
-			AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp_sht*10)>>8;      
-			AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp_sht*10);
-			AppData.Buff[i++] =(int)(bsp_sensor_data_buff.hum_sht*10)>>8;   
-			AppData.Buff[i++] =(int)(bsp_sensor_data_buff.hum_sht*10);
-		}
-   
-    AppData.Buff[i++] =(int)(bsp_sensor_data_buff.bat_mv/100);			
-	}
-	else if(workmode==4)
-	{	
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4);
-		
-		AppData.Buff[i++]=(bsp_sensor_data_buff.exit_pa8<<7)|(bsp_sensor_data_buff.in1<<1)|0x0C|(exit_temp&0x01);
+	AppData.Buff[i++] = (bsp_sensor_data_buff.ads1115_ch2 >> 8) & 0xFF;
+	AppData.Buff[i++] = bsp_sensor_data_buff.ads1115_ch2 & 0xFF;
 
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp2*10)>>8;      
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp2*10);
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp3*10)>>8;   
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp3*10);	
-	}
-	else if(workmode==5)
-	{	
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
+	AppData.Buff[i++] = (bsp_sensor_data_buff.ads1115_ch3 >> 8) & 0xFF;
+	AppData.Buff[i++] = bsp_sensor_data_buff.ads1115_ch3 & 0xFF;
 	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4);
-		
-		AppData.Buff[i++]=(bsp_sensor_data_buff.exit_pa8<<7)|(bsp_sensor_data_buff.in1<<1)|0x10|(exit_temp&0x01);
-
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.Weight)>>8;      
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.Weight);
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.Weight)>>24;   
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.Weight)>>16;	
-	}
-	else if(workmode==6)
-	{	
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int) bsp_sensor_data_buff.ADC_4;
-		
-		AppData.Buff[i++]= (bsp_sensor_data_buff.in1<<1)|0x14;
-
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.count_pa8)>>24;      
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.count_pa8)>>16;
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.count_pa8)>>8;   
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.count_pa8);	
-	}
-	else if(workmode==7)
-	{	
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_5)>>8;          
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_5);
-		
-		AppData.Buff[i++] =(bsp_sensor_data_buff.exit_pa8<<7)|0x18|(exit_temp&0x01);			
-  	AppData.Buff[i++] =(exit2_temp<<4) | bsp_sensor_data_buff.exit_pa4;           				
-	  AppData.Buff[i++] =(exit3_temp<<4) | bsp_sensor_data_buff.exit_pb15;   
-
-		AppData.Buff[i++] = 0xFF;   
-		AppData.Buff[i++] = 0xFF;	
-	}
-	else if(workmode==8)
-	{	
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4);
-		
-		AppData.Buff[i++] =(bsp_sensor_data_buff.exit_pb15<<7)|0x1C|(exit3_temp&0x01);		
-
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_5)>>8;     
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_5);
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_8)>>8; 
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_8);	
-	}
-	else if(workmode==9)
-	{	
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp2*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp2*10);
-		
-		AppData.Buff[i++] =(bsp_sensor_data_buff.exit_pb15<<7)|0x20|(exit3_temp&0x01);	
-
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp3*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp3*10);
-
-		AppData.Buff[i++] = (uint8_t)((bsp_sensor_data_buff.count_pa8)>>24);
-		AppData.Buff[i++] =	(uint8_t)((bsp_sensor_data_buff.count_pa8)>>16);	
-		AppData.Buff[i++] = (uint8_t)((bsp_sensor_data_buff.count_pa8)>>8);
-		AppData.Buff[i++] =	(uint8_t)(bsp_sensor_data_buff.count_pa8); 
-		
-		AppData.Buff[i++] = (uint8_t)((bsp_sensor_data_buff.count_pa4)>>24);
-		AppData.Buff[i++] =	(uint8_t)((bsp_sensor_data_buff.count_pa4)>>16);	
-		AppData.Buff[i++] = (uint8_t)((bsp_sensor_data_buff.count_pa4)>>8);
-		AppData.Buff[i++] =	(uint8_t)(bsp_sensor_data_buff.count_pa4); 	
-	}
-  else if(workmode==10)
-	{		
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4);
-
-		AppData.Buff[i++]=(bsp_sensor_data_buff.exit_pa8<<7)|0x24|((pwm_timer&0x01)<<1)|(exit_temp&0x01);
-	
-		AppData.Buff[i++]= (bsp_sensor_data_buff.pwm_freq)>>8;
-		AppData.Buff[i++]=  bsp_sensor_data_buff.pwm_freq;
-		
-		AppData.Buff[i++]= (bsp_sensor_data_buff.pwm_duty)>>8;
-		AppData.Buff[i++]=  bsp_sensor_data_buff.pwm_duty;
-	}
-  else if(workmode==11)
-	{		
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;
-	
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10)>>8;     
-		AppData.Buff[i++]=(int)(bsp_sensor_data_buff.temp1*10);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4)>>8;          
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.ADC_4);
-
-		AppData.Buff[i++]=(bsp_sensor_data_buff.exit_pa8<<7)|0x28|(bsp_sensor_data_buff.in1<<1)|(exit_temp&0x01);
-	
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp_tmp117*100)>>8;      
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp_tmp117*100);
-		AppData.Buff[i++] = 0x00;   
-		AppData.Buff[i++] = 0x00; 
-	}
-	else if(workmode==12)
-	{
-		AppData.Buff[i++] =(bsp_sensor_data_buff.bat_mv>>8);       
-		AppData.Buff[i++] = bsp_sensor_data_buff.bat_mv & 0xFF;		
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp_sht*10)>>8;      
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.temp_sht*10);
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.hum_sht*10)>>8;   
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.hum_sht*10);	
-		AppData.Buff[i++]= (bsp_sensor_data_buff.in1<<1) | 0x2C;		
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.count_pa8)>>24;      
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.count_pa8)>>16;
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.count_pa8)>>8;   
-		AppData.Buff[i++] =(int)(bsp_sensor_data_buff.count_pa8);	    		
-	}
-	
-  AppData.BuffSize = i;
+	AppData.BuffSize = i;
 	payloadlens=i;
 	
 	if(exit_temp==1)

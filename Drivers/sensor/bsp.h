@@ -54,6 +54,11 @@ typedef struct{
 	
 	uint16_t pwm_duty;
 	
+	uint16_t ads1115_ch0;
+	uint16_t ads1115_ch1;
+	uint16_t ads1115_ch2;
+	uint16_t ads1115_ch3;
+	
   /**more may be added*/
 } sensor_t;
 
@@ -76,6 +81,8 @@ typedef struct{
 void BLE_power_Init(void);
 void  BSP_sensor_Init( void  );
 void BSP_sensor_Read( sensor_t *sensor_data , uint8_t message ,uint8_t mod_temp);
+void ADS1115_Read_All(sensor_t *sensor_data, uint8_t message);
+uint16_t ADS1115_Read_Channel(uint8_t channel);
 float DS18B20_Read(uint8_t temp,uint8_t message);
 uint16_t ADC_Read(uint8_t temp,uint8_t message);
 bool Digital_input_Read(uint8_t temp,uint8_t message);

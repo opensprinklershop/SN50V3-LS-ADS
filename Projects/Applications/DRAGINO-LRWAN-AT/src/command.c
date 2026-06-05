@@ -3227,10 +3227,6 @@ static int at_getsensorvalue_func(int opt, int argc, char *argv[])
 						{
               if(status==0)
 							{		
-								if(( LoRaMacState & 0x00000001 ) == 0x00000001)
-								{
-									return LWAN_BUSY_ERROR;
-								}									
 								getsensor_flags=1;	
 							  sensor_t bsp_sensor_data_buff;
 								BSP_sensor_Read(&bsp_sensor_data_buff,1,workmode);
