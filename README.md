@@ -38,7 +38,7 @@ Der ADS1115 wird an die 11-polige Klemmleiste des SN50V3-LB angeschlossen. Der A
 
 ### Wichtige Hardware-Hinweise:
 *   **I2C Pull-Up Widerstände**: Stellen Sie sicher, dass auf Ihrem ADS1115-Breakout-Board bereits Pull-Up-Widerstände (z.B. 4.7kΩ oder 10kΩ nach 5V/3.3V) für SDA und SCL verbaut sind. Falls nicht, müssen diese extern hinzugefügt werden.
-*   **Referenzspannung & Signalpegel**: Der ADS1115 ist in dieser Firmware mit einem Gain von `+/- 4.096V` (PGA = 001) konfiguriert. Da der ADS1115 hier mit 5V versorgt wird, dürfen an den analogen Eingängen des ADS1115 maximal **5.3V** anliegen. Die Pegel der I2C-Leitungen (SDA/SCL) sind dank Open-Drain-Schaltung auf der MCU-Seite 3.3V-kompatibel (die Pull-Ups auf dem ADS1115-Modul sollten idealerweise an 3.3V angeschlossen sein, oder ein Pegelwandler wird verwendet, falls das Modul feste 5V-Pullups besitzt; die meisten ADS1115-Boards funktionieren jedoch problemlos direkt mit 3.3V-I2C-Bussen).
+*   **Referenzspannung & Signalpegel**: Da der ADS1115 hier mit 5V versorgt wird, ist die Spannungsversorgung vollständig 5V-konform. An den analogen Eingängen des ADS1115 dürfen Spannungen von bis zu 5V (maximal 5.3V) anliegen. Die Pegel der I2C-Leitungen (SDA/SCL) sind dank Open-Drain-Schaltung auf der MCU-Seite 3.3V-kompatibel (die meisten ADS1115-Boards funktionieren problemlos direkt mit den 3.3V-I2C-Leitungen des SN50V3-LB).
 
 ---
 
