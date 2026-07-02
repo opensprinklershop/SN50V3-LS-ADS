@@ -64,6 +64,19 @@ Beide Sensoren werden über den geschalteten 5V-Ausgang (Klemme 2) des SN50V3-LS
 | **Sensor 2** | **Gelb** | Bodenfeuchte | **A2** | - | Messkanal Bodenfeuchte SMT50 #2 |
 | **Sensor 2** | **Grün** | Temperatur | **A3** | - | Messkanal Temperatur SMT50 #2 |
 
+#### Anschlussbild SMT50
+
+![SMT50 Anschluss am ADS1115](ADS1115-CON.png)
+
+#### SMT50 Kanalzuordnung
+
+Ein SMT50 belegt je **2 ADS1115-Kanäle** (ein Analogausgang für Feuchte, einer für Temperatur):
+
+*   **SMT50 #1** → A0 = Feuchte, A1 = Temperatur
+*   **SMT50 #2** → A2 = Feuchte, A3 = Temperatur
+
+Die vier Kanäle werden als Rohwerte `ads1115_ch0 … ch3` (16-Bit) im LoRaWAN-Payload übertragen; die Umrechnung in % VWC und °C erfolgt im Payload-Decoder (siehe Abschnitt 4.1). Als Referenz entsprechen die Formeln dem Truebner SMT50: Feuchte % VWC = V × 50/3, Temperatur °C = (V − 0,5) × 100 (0,5 V = 0 °C, +10 mV/°C).
+
 ---
 
 ## 3. LoRaWAN Payload-Format (14 Bytes)
