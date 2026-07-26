@@ -9,7 +9,8 @@ bool iic_noack=0;
 void I2C_GPIO_MODE_Config(void)
 {
   rcc_enable_peripheral_clk(RCC_PERIPHERAL_GPIOA, true);
-	
+  gpio_set_iomux(GPIO_PORT_I2C, I2C_SCL_PIN, 0);
+  gpio_set_iomux(GPIO_PORT_I2C, I2C_SDA_PIN, 0);
   gpio_init(GPIO_PORT_I2C, I2C_SCL_PIN, GPIO_MODE_OUTPUT_OD_HIZ);
 	gpio_init(GPIO_PORT_I2C, I2C_SDA_PIN, GPIO_MODE_OUTPUT_OD_HIZ);
 }
@@ -17,6 +18,8 @@ void I2C_GPIO_MODE_Config(void)
 void I2C_GPIO_MODE_ANALOG(void)
 {
   rcc_enable_peripheral_clk(RCC_PERIPHERAL_GPIOA, true);
+  gpio_set_iomux(GPIO_PORT_I2C, I2C_SCL_PIN, 0);
+  gpio_set_iomux(GPIO_PORT_I2C, I2C_SDA_PIN, 0);
   gpio_init(GPIO_PORT_I2C, I2C_SCL_PIN, GPIO_MODE_ANALOG);
 	gpio_init(GPIO_PORT_I2C, I2C_SDA_PIN, GPIO_MODE_ANALOG);	
 }
@@ -349,7 +352,8 @@ void DelayMicroSeconds(uint16_t delay)
 void I2c_hal_Init(void)                      /* -- adapt the init for your uC -- */
 {
   rcc_enable_peripheral_clk(RCC_PERIPHERAL_GPIOA, true);
-	
+  gpio_set_iomux(GPIO_PORT_I2C, I2C_SCL_PIN, 0);
+  gpio_set_iomux(GPIO_PORT_I2C, I2C_SDA_PIN, 0);
   gpio_init(GPIO_PORT_I2C, I2C_SCL_PIN, GPIO_MODE_OUTPUT_OD_HIZ);
 	gpio_init(GPIO_PORT_I2C, I2C_SDA_PIN, GPIO_MODE_OUTPUT_OD_HIZ);
 }
