@@ -338,6 +338,7 @@ int main(void)
 		BSP_sensor_Init();
 		StartIWDGRefresh();		
 	  LoraStartCheckBLE();
+	  LOG_PRINTF(LL_DEBUG,"OpenSprinklerShop-Edition\r\n");
 	
 	  if(debug_flags==1)
 		{

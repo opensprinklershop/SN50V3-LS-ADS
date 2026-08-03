@@ -345,6 +345,7 @@ int main(void)
 		BSP_sensor_Init();
 		StartIWDGRefresh();		
 	  LoraStartCheckBLE();
+	  LOG_PRINTF(LL_DEBUG,"OpenSprinklerShop-Edition\r\n");
 	
 	  display_message();
 	  if(*((uint8_t *)(0x2000FE0B))==0xAA)
