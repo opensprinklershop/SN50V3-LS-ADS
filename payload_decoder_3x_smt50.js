@@ -3,21 +3,21 @@
  * 
  * Dekodiert einen 14-Byte LoRaWAN-Uplink für eine Konfiguration mit:
  * - 2x SMT50 am ADS1115 (mit Bodenfeuchte und Temperatur)
- * - 1x SMT50 am internen ADC PA4 (nur Bodenfeuchte, ohne Temperatur)
+ * - 1x SMT50 am internen ADC PA4 (nur Temperatur)
  * 
  * Konfiguration:
  * - SMT50 #1: Gelb → ADS1115 A0 (Feuchte), Grün → A1 (Temperatur)
  * - SMT50 #2: Gelb → ADS1115 A2 (Feuchte), Grün → A3 (Temperatur)
- * - SMT50 #3: Gelb → PA4/ADC1 (nur Feuchte, kein Temperatur-Draht verbunden)
+ * - SMT50 #3: Grün → PA4/ADC1 (Temperatur)
  * 
  * SMT50 Charakteristiken:
  * - Bodenfeuchte: 0V = 0% VWC, 3V = 50% VWC
- * - Temperatur: 0.1V = -40°C, 3V = +60°C
- * - SMT50 #3 am PA4: Direkte ADC-Messung, Umrechnung: 0mV → 0%, 3300mV → 50%
+ * - Temperatur: 0.1V = -40°C, 1.1V = +60°C (typischer SMT50-Bereich: ca. 0.2..1.0V)
+ * - PA4 ist nur bis 1.1V nutzbar und daher nur für SMT50-Temperatur geeignet
  * 
  * Payload-Format (14 Bytes, Big-Endian):
  * - Byte 0-1:   Batteriespannung (uint16, mV)
- * - Byte 2-3:   ADC1 / PA4 (uint16, mV) → wird als SMT50 #3 Bodenfeuchte interpretiert
+ * - Byte 2-3:   ADC1 / PA4 (uint16, mV) → wird als SMT50 #3 Temperatur interpretiert
  * - Byte 4-5:   ADC3 / PA8 (uint16, mV)
  * - Byte 6-7:   ADS1115 A0 (int16, SMT50 #1 Bodenfeuchte)
  * - Byte 8-9:   ADS1115 A1 (int16, SMT50 #1 Temperatur)
@@ -35,7 +35,7 @@ function decodeUplink(input) {
     // Batterie-Spannung (Byte 0-1)
     decoded.battery_mv = (bytes[0] << 8) | bytes[1];
 
-    // PA4 Rohwert (Byte 2-3) - wird als SMT50 #3 Bodenfeuchte interpretiert
+    // PA4 Rohwert (Byte 2-3) - wird als SMT50 #3 Temperatur interpretiert
     var pa4_mv = (bytes[2] << 8) | bytes[3];
     decoded.adc_pa4_mv = pa4_mv;
 
@@ -96,22 +96,18 @@ function decodeUplink(input) {
       decoded.smt50_2_temp_c = parseFloat(temp2.toFixed(1));
     }
 
-    // ============ SMT50 #3 (PA4 direkt, nur Feuchte) ============
-
-    // SMT50 #3 wird direkt vom ADC PA4 gelesen (keine ADS1115-Umrechnung notwendig)
-    // Umrechnung: PA4 liefert 0..3.3V = 0..3300mV
-    // SMT50 Bodenfeuchte: 0V = 0%, 3V = 50%
-    // Vereinfachte Formel: % VWC = (mV / 3300) * 50 = (mV / 66)
+    // ============ SMT50 #3 (PA4 direkt, nur Temperatur) ============
+    // SMT50 Temperatur: 0.5V = 0°C, +10mV pro °C
+    // Formel: °C = (mV - 500) / 10
+    // Hinweis: PA4 ist auf maximal 1.1V begrenzt und eignet sich daher nur
+    // für den Temperaturbereich des SMT50.
     
     if (pa4_mv === 0 && ch0_raw === 0 && ch1_raw === 0 && ch2_raw === 0 && ch3_raw === 0) {
       // Fallback: Wenn alle Werte 0 sind, ist möglicherweise kein Sensor verbunden
-      decoded.smt50_3_moisture_vwc = null;
+      decoded.smt50_3_temp_c = null;
     } else {
-      // Berechnung: 0..3300mV → 0..50% VWC
-      var moisture3 = (pa4_mv / 3300.0) * 50.0;
-      // Clipping auf 0..50% Bereich (falls Messwert außerhalb liegt)
-      moisture3 = Math.max(0, Math.min(50, moisture3));
-      decoded.smt50_3_moisture_vwc = parseFloat(moisture3.toFixed(2));
+      var temp3 = (pa4_mv - 500.0) / 10.0;
+      decoded.smt50_3_temp_c = parseFloat(temp3.toFixed(1));
     }
   }
 
