@@ -79,7 +79,7 @@ Die vier Kanäle werden als Rohwerte `ads1115_ch0 … ch3` (16-Bit) im LoRaWAN-P
 
 ### 2.2 Erweiterter Anschluss: 3x Truebner SMT50
 
-Für ein System mit **drei Truebner SMT50-Sensoren** werden zwei Sensoren an den ADS1115 (für Feuchte und Temperatur) und der dritte Sensor mit seinem Temperaturausgang über den internen ADC des Microcontrollers (PA4) angeschlossen.
+Für ein System mit **drei Truebner SMT50-Sensoren** werden die drei Feuchte-Signale (0..3V) an die ADS1115-Kanäle A0, A1 und A2 gelegt. Die Temperatur-Signale (max. ~1V) werden über die internen ADC-Eingänge PA4 und PA8 sowie den noch freien ADS1115-Kanal A3 erfasst. So liefern **alle drei Sensoren Feuchte und Temperatur**.
 
 #### Anschlussbelegung für 3x SMT50:
 
@@ -88,25 +88,24 @@ Für ein System mit **drei Truebner SMT50-Sensoren** werden zwei Sensoren an den
 | **Sensor 1** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Stromversorgung |
 | **Sensor 1** | **Weiß** | Ground (GND) | - | **11** (GND) | Masse |
 | **Sensor 1** | **Gelb** | Bodenfeuchte | **ADS1115 A0** | - | SMT50 #1 Feuchte |
-| **Sensor 1** | **Grün** | Temperatur | **ADS1115 A1** | - | SMT50 #1 Temperatur |
+| **Sensor 1** | **Grün** | Temperatur | **PA4 (ADC1)** | **3** | SMT50 #1 Temperatur |
 | **Sensor 2** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Stromversorgung |
 | **Sensor 2** | **Weiß** | Ground (GND) | - | **11** (GND) | Masse |
-| **Sensor 2** | **Gelb** | Bodenfeuchte | **ADS1115 A2** | - | SMT50 #2 Feuchte |
-| **Sensor 2** | **Grün** | Temperatur | **ADS1115 A3** | - | SMT50 #2 Temperatur |
+| **Sensor 2** | **Gelb** | Bodenfeuchte | **ADS1115 A1** | - | SMT50 #2 Feuchte |
+| **Sensor 2** | **Grün** | Temperatur | **PA8 (ADC3)** | **9** | SMT50 #2 Temperatur |
 | **Sensor 3** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Stromversorgung |
 | **Sensor 3** | **Weiß** | Ground (GND) | - | **11** (GND) | Masse |
-| **Sensor 3** | **Gelb** | Bodenfeuchte | **ADS1115 A0/A2 (tauschen)** | - | Falls Feuchte benötigt wird, auf ADS1115 legen |
-| **Sensor 3** | **Grün** | Temperatur | **PA4 (ADC1)** | **3** | SMT50 #3 Temperatur |
+| **Sensor 3** | **Gelb** | Bodenfeuchte | **ADS1115 A2** | - | SMT50 #3 Feuchte |
+| **Sensor 3** | **Grün** | Temperatur | **ADS1115 A3** | - | SMT50 #3 Temperatur |
 
 #### Hinweis zur Konfiguration:
-*   **SMT50 #1 & #2** nutzen alle 4 Kanäle des ADS1115 (A0–A3) für Feuchte und Temperatur.
-*   **PA4 kann nur bis 1.1V messen** und ist damit nur für SMT50-Temperatur geeignet.
-*   Falls für Sensor 3 zusätzlich Bodenfeuchte benötigt wird, muss der Feuchte-Ausgang (gelb) auf einen ADS1115-Kanal gelegt werden.
-*   Im Payload-Decoder (siehe Abschnitt 4.3) wird SMT50 #3 über das `adc_pa4_mv`-Feld als Temperatur ausgewertet.
+*   **Bodenfeuchte (0..3V) liegt immer am ADS1115** (A0, A1, A2), da PA4/PA8 nur bis 1.1V messen können.
+*   **PA4 und PA8** übernehmen die Temperatur von Sensor #1 und #2; die Temperatur von Sensor #3 wird über den freien ADS1115-Kanal A3 erfasst.
+*   Im Payload-Decoder (siehe Abschnitt 4.3) werden die Temperaturen von #1/#2 aus `adc_pa4_mv`/`adc_pa8_mv` und die von #3 aus ADS1115 A3 berechnet.
 
 ### 2.3 Maximal-Konfiguration: 4x Truebner SMT50
 
-Für maximale Sensorabdeckung können **vier Truebner SMT50-Sensoren** angeschlossen werden: zwei für Feuchte und Temperatur am ADS1115, und zwei weitere mit ihren Temperaturausgängen an PA4 und PA8 des Microcontrollers.
+Für maximale Sensorabdeckung können **vier Truebner SMT50-Sensoren** angeschlossen werden. Da die Bodenfeuchte (0..3V) zwingend am ADS1115 gemessen werden muss, belegen die **vier Feuchte-Signale alle Kanäle A0..A3**. Die internen Eingänge PA4 und PA8 (max. 1.1V) übernehmen die Temperatur von zwei der Sensoren; die übrigen zwei Sensoren liefern nur Feuchte.
 
 #### Anschlussbelegung für 4x SMT50:
 
@@ -115,25 +114,25 @@ Für maximale Sensorabdeckung können **vier Truebner SMT50-Sensoren** angeschlo
 | **Sensor 1** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Stromversorgung |
 | **Sensor 1** | **Weiß** | Ground (GND) | - | **11** (GND) | Masse |
 | **Sensor 1** | **Gelb** | Bodenfeuchte | **ADS1115 A0** | - | SMT50 #1 Feuchte |
-| **Sensor 1** | **Grün** | Temperatur | **ADS1115 A1** | - | SMT50 #1 Temperatur |
+| **Sensor 1** | **Grün** | Temperatur | **PA4 (ADC1)** | **3** | SMT50 #1 Temperatur |
 | **Sensor 2** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Stromversorgung |
 | **Sensor 2** | **Weiß** | Ground (GND) | - | **11** (GND) | Masse |
-| **Sensor 2** | **Gelb** | Bodenfeuchte | **ADS1115 A2** | - | SMT50 #2 Feuchte |
-| **Sensor 2** | **Grün** | Temperatur | **ADS1115 A3** | - | SMT50 #2 Temperatur |
+| **Sensor 2** | **Gelb** | Bodenfeuchte | **ADS1115 A1** | - | SMT50 #2 Feuchte |
+| **Sensor 2** | **Grün** | Temperatur | **PA8 (ADC3)** | **9** | SMT50 #2 Temperatur |
 | **Sensor 3** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Stromversorgung |
 | **Sensor 3** | **Weiß** | Ground (GND) | - | **11** (GND) | Masse |
-| **Sensor 3** | **Gelb** | Bodenfeuchte | **ADS1115 A0/A2 (tauschen)** | - | Falls Feuchte benötigt wird, auf ADS1115 legen |
-| **Sensor 3** | **Grün** | Temperatur | **PA4 (ADC1)** | **3** | SMT50 #3 Temperatur |
+| **Sensor 3** | **Gelb** | Bodenfeuchte | **ADS1115 A2** | - | SMT50 #3 Feuchte |
+| **Sensor 3** | **Grün** | (nicht verbunden) | - | - | Keine Temperatur für Sensor 3 |
 | **Sensor 4** | **Braun** | Power (VCC) | - | **2** (+5V geschaltet) | Stromversorgung |
 | **Sensor 4** | **Weiß** | Ground (GND) | - | **11** (GND) | Masse |
-| **Sensor 4** | **Gelb** | Bodenfeuchte | **ADS1115 A0/A2 (tauschen)** | - | Falls Feuchte benötigt wird, auf ADS1115 legen |
-| **Sensor 4** | **Grün** | Temperatur | **PA8 (ADC3)** | **9** | SMT50 #4 Temperatur |
+| **Sensor 4** | **Gelb** | Bodenfeuchte | **ADS1115 A3** | - | SMT50 #4 Feuchte |
+| **Sensor 4** | **Grün** | (nicht verbunden) | - | - | Keine Temperatur für Sensor 4 |
 
 #### Hinweis zur Konfiguration:
-*   **SMT50 #1 & #2** nutzen alle 4 Kanäle des ADS1115 (A0–A3) für Feuchte und Temperatur.
-*   **PA4 und PA8 sind auf 1.1V begrenzt** und daher nur für SMT50-Temperatur geeignet.
-*   Falls Bodenfeuchte für SMT50 #3/#4 benötigt wird, müssen deren gelbe Leitungen auf ADS1115-Kanäle umgeklemmt werden.
-*   Im Payload-Decoder (siehe Abschnitt 4.4) werden SMT50 #3 und #4 über `adc_pa4_mv` und `adc_pa8_mv` als Temperatur ausgewertet.
+*   **Alle vier ADS1115-Kanäle A0..A3 tragen Bodenfeuchte** (je ein Sensor), da PA4/PA8 nur bis 1.1V messen können.
+*   **PA4 und PA8** übernehmen die Temperatur von Sensor #1 und #2. Für #3 und #4 steht keine Temperatur zur Verfügung.
+*   Wird für #3/#4 ebenfalls Temperatur benötigt, muss die Sensoranzahl reduziert werden (siehe 3x-Konfiguration mit A3 als zusätzlichem Temperaturkanal).
+*   Im Payload-Decoder (siehe Abschnitt 4.4) werden die Temperaturen von #1/#2 aus `adc_pa4_mv`/`adc_pa8_mv` berechnet.
 
 ### Montage & Inbetriebnahme
 
@@ -172,37 +171,37 @@ Wenn zwei Truebner SMT50-Sensoren wie in Abschnitt 2.1 beschrieben an den ADS111
 | **10 - 11**| ADS1115 Kanal 2 | `int16` | **SMT50 #2 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
 | **12 - 13**| ADS1115 Kanal 3 | `int16` | **SMT50 #2 Temperatur** | Raw-Wert (0.1V = 800, 1.1V = 8796, entspricht -40 bis +60 °C) |
 
-### 3.2 Payload-Mapping für 3x Truebner SMT50 (Konfiguration mit ADS1115 + PA4)
+### 3.2 Payload-Mapping für 3x Truebner SMT50 (Konfiguration mit ADS1115 + PA4 + PA8)
 
-Wenn drei Truebner SMT50-Sensoren wie in Abschnitt 2.2 beschrieben angeschlossen sind (zwei mit Temperatur am ADS1115, ein weiterer mit Temperatur an PA4):
+Wenn drei Truebner SMT50-Sensoren wie in Abschnitt 2.2 beschrieben angeschlossen sind (Feuchte auf A0..A2, Temperatur auf PA4, PA8 und A3):
 
 | Byte-Index | Name | Datentyp | SMT50 Zuordnung | Beschreibung / Wertebereich |
 | :---: | :--- | :---: | :---: | :--- |
 | **0 - 1** | Batterie-Spannung | `uint16` | - | Batteriespannung in Millivolt (mV) |
-| **2 - 3** | ADC1 (PA4) | `uint16` | **SMT50 #3 Temperatur** | Direkter ADC-Wert PA4 (0.2..1.0V typisch, max. 1.1V nutzbar) |
-| **4 - 5** | ADC3 (PA8) | `uint16` | - | Interner Analogwert PA8 (max. 1.1V nutzbar) |
+| **2 - 3** | ADC1 (PA4) | `uint16` | **SMT50 #1 Temperatur** | Direkter ADC-Wert PA4 (0.2..1.0V typisch, max. 1.1V nutzbar) |
+| **4 - 5** | ADC3 (PA8) | `uint16` | **SMT50 #2 Temperatur** | Direkter ADC-Wert PA8 (0.2..1.0V typisch, max. 1.1V nutzbar) |
 | **6 - 7** | ADS1115 Kanal 0 | `int16` | **SMT50 #1 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
-| **8 - 9** | ADS1115 Kanal 1 | `int16` | **SMT50 #1 Temperatur** | Raw-Wert (0.1V = 800, 1.1V = 8796, entspricht -40 bis +60 °C) |
-| **10 - 11**| ADS1115 Kanal 2 | `int16` | **SMT50 #2 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
-| **12 - 13**| ADS1115 Kanal 3 | `int16` | **SMT50 #2 Temperatur** | Raw-Wert (0.1V = 800, 1.1V = 8796, entspricht -40 bis +60 °C) |
+| **8 - 9** | ADS1115 Kanal 1 | `int16` | **SMT50 #2 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
+| **10 - 11**| ADS1115 Kanal 2 | `int16` | **SMT50 #3 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
+| **12 - 13**| ADS1115 Kanal 3 | `int16` | **SMT50 #3 Temperatur** | Raw-Wert (0.1V = 800, 1.1V = 8796, entspricht -40 bis +60 °C) |
 
-**Hinweis:** SMT50 #3 wird über den direkten ADC1-Wert (PA4) als Temperatur ausgewertet. Die Temperaturformel bleibt unverändert; sie passt weiterhin zum relevanten SMT50-Bereich von ca. 0.2..1.0V.
+**Hinweis:** Die Feuchte aller drei Sensoren liegt am ADS1115 (A0..A2). Die Temperaturen von #1/#2 stammen aus PA4/PA8, die von #3 aus ADS1115 A3. Die Temperaturformeln bleiben unverändert und passen zum relevanten SMT50-Bereich von ca. 0.2..1.0V.
 
 ### 3.3 Payload-Mapping für 4x Truebner SMT50 (Vollständige Konfiguration mit ADS1115 + PA4 + PA8)
 
-Wenn vier Truebner SMT50-Sensoren wie in Abschnitt 2.3 beschrieben angeschlossen sind (zwei mit Temperatur am ADS1115, zwei weitere mit Temperatur an PA4 und PA8):
+Wenn vier Truebner SMT50-Sensoren wie in Abschnitt 2.3 beschrieben angeschlossen sind (Feuchte aller vier Sensoren auf A0..A3, Temperatur von #1/#2 auf PA4/PA8):
 
 | Byte-Index | Name | Datentyp | SMT50 Zuordnung | Beschreibung / Wertebereich |
 | :---: | :--- | :---: | :---: | :--- |
 | **0 - 1** | Batterie-Spannung | `uint16` | - | Batteriespannung in Millivolt (mV) |
-| **2 - 3** | ADC1 (PA4) | `uint16` | **SMT50 #3 Temperatur** | Direkter ADC-Wert PA4 (0.2..1.0V typisch, max. 1.1V nutzbar) |
-| **4 - 5** | ADC3 (PA8) | `uint16` | **SMT50 #4 Temperatur** | Direkter ADC-Wert PA8 (0.2..1.0V typisch, max. 1.1V nutzbar) |
+| **2 - 3** | ADC1 (PA4) | `uint16` | **SMT50 #1 Temperatur** | Direkter ADC-Wert PA4 (0.2..1.0V typisch, max. 1.1V nutzbar) |
+| **4 - 5** | ADC3 (PA8) | `uint16` | **SMT50 #2 Temperatur** | Direkter ADC-Wert PA8 (0.2..1.0V typisch, max. 1.1V nutzbar) |
 | **6 - 7** | ADS1115 Kanal 0 | `int16` | **SMT50 #1 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
-| **8 - 9** | ADS1115 Kanal 1 | `int16` | **SMT50 #1 Temperatur** | Raw-Wert (0.1V = 800, 1.1V = 8796, entspricht -40 bis +60 °C) |
-| **10 - 11**| ADS1115 Kanal 2 | `int16` | **SMT50 #2 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
-| **12 - 13**| ADS1115 Kanal 3 | `int16` | **SMT50 #2 Temperatur** | Raw-Wert (0.1V = 800, 1.1V = 8796, entspricht -40 bis +60 °C) |
+| **8 - 9** | ADS1115 Kanal 1 | `int16` | **SMT50 #2 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
+| **10 - 11**| ADS1115 Kanal 2 | `int16` | **SMT50 #3 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
+| **12 - 13**| ADS1115 Kanal 3 | `int16` | **SMT50 #4 Bodenfeuchte** | Raw-Wert (0V = 0, 3V = 23999, entspricht 0 bis 50% VWC) |
 
-**Hinweis:** SMT50 #3 und #4 werden über die direkten ADC-Werte (PA4, PA8) als Temperatur ausgewertet. Die Temperaturformel bleibt unverändert; sie passt weiterhin zum relevanten SMT50-Bereich von ca. 0.2..1.0V.
+**Hinweis:** Alle vier ADS1115-Kanäle A0..A3 tragen Bodenfeuchte (je ein Sensor). Die Temperaturen von #1/#2 stammen aus PA4/PA8; #3 und #4 liefern keine Temperatur. Die Temperaturformel bleibt unverändert und passt zum relevanten SMT50-Bereich von ca. 0.2..1.0V.
 
 ---
 
@@ -357,19 +356,19 @@ function decodeUplink(input) {
 
 ### 4.3 JavaScript Decoder für 3x Truebner SMT50
 
-Für ein System mit drei Sensoren (zwei mit Temperatur am ADS1115, ein weiterer mit Temperatur an PA4) wird der folgende Decoder verwendet:
+Für ein System mit drei Sensoren (Feuchte auf A0..A2, Temperatur auf PA4, PA8 und A3) wird der folgende Decoder verwendet:
 
 **Verfügbar in separater Datei:** [`payload_decoder_3x_smt50.js`](payload_decoder_3x_smt50.js)
 
-**Hinweis:** SMT50 #3 wird über den direkten ADC1-Wert (PA4) als Temperatur ausgewertet. PA4 ist auf 1.1V begrenzt und damit für SMT50-Temperatur geeignet; für Bodenfeuchte muss auf ADS1115 umgeklemmt werden.
+**Hinweis:** Die Bodenfeuchte aller drei Sensoren liegt am ADS1115 (A0..A2), da PA4/PA8 nur bis 1.1V messen. Die Temperaturen von #1/#2 stammen aus PA4/PA8, die von #3 aus ADS1115 A3.
 
 ### 4.4 JavaScript Decoder für 4x Truebner SMT50
 
-Für ein System mit vier Sensoren (zwei mit Temperatur am ADS1115, zwei weitere mit Temperatur an PA4 und PA8) wird der folgende Decoder verwendet:
+Für ein System mit vier Sensoren (Feuchte aller vier Sensoren auf A0..A3, Temperatur von #1/#2 auf PA4/PA8) wird der folgende Decoder verwendet:
 
 **Verfügbar in separater Datei:** [`payload_decoder_4x_smt50.js`](payload_decoder_4x_smt50.js)
 
-**Hinweis:** SMT50 #3 und #4 werden über die direkten ADC-Werte (PA4, PA8) als Temperatur ausgewertet. PA4/PA8 sind auf 1.1V begrenzt; für Bodenfeuchte muss der Anschluss auf ADS1115 getauscht werden.
+**Hinweis:** Alle vier ADS1115-Kanäle A0..A3 tragen Bodenfeuchte, da PA4/PA8 nur bis 1.1V messen. Über PA4/PA8 wird zusätzlich die Temperatur von Sensor #1 und #2 erfasst; #3 und #4 liefern nur Feuchte.
 
 ---
 
