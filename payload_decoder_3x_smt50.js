@@ -64,26 +64,30 @@ function decodeUplink(input) {
     var ch2_raw = readInt16(bytes[10], bytes[11]); // SMT50 #3 Bodenfeuchte (Gelb)
     var ch3_raw = readInt16(bytes[12], bytes[13]); // SMT50 #3 Temperatur (Grün)
 
+    // I2C-Fehler: Die Firmware sendet dann auf ALLEN vier Kanälen 0xFFFF (= -1).
+    // Ein einzelnes -1 ist dagegen ein gültiger Messwert (Offset bei 0V) und wird auf 0 begrenzt.
+    var i2cError = (ch0_raw === -1 && ch1_raw === -1 && ch2_raw === -1 && ch3_raw === -1);
+
     /**
      * Hilfsfunktion: Bodenfeuchte (% VWC) aus ADS1115-Rohwert
-     * Formel: % VWC = (raw / 32767.0) * 68.2667
+     * Formel: % VWC = V * 50/3 = raw * 0.000125 * 50/3 = raw / 480
      */
     function moistureVwc(raw) {
-      if (raw === -1 || raw === 0xFFFF) {
+      if (i2cError) {
         return null;
       }
-      return parseFloat(((raw / 32767.0) * 68.2667).toFixed(2));
+      return parseFloat((Math.max(raw, 0) / 480.0).toFixed(2));
     }
 
     /**
      * Hilfsfunktion: SMT50-Temperatur (°C) aus ADS1115-Rohwert
-     * Formel: °C = ((raw / 32767.0) * 409.6) - 50.0
+     * Formel: °C = (V - 0.5) * 100 = raw * 0.0125 - 50 = raw / 80 - 50
      */
     function tempFromRaw(raw) {
-      if (raw === -1 || raw === 0xFFFF) {
+      if (i2cError) {
         return null;
       }
-      return parseFloat((((raw / 32767.0) * 409.6) - 50.0).toFixed(1));
+      return parseFloat(((Math.max(raw, 0) / 80.0) - 50.0).toFixed(1));
     }
 
     /**

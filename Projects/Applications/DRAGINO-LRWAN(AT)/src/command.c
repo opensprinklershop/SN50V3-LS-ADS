@@ -184,6 +184,7 @@ static int at_uuid_func(int opt, int argc, char *argv[]);
 static int at_downlink_detect_func(int opt, int argc, char *argv[]);
 static int at_setmaxnbtrans_func(int opt, int argc, char *argv[]);
 static int at_getsensorvalue_func(int opt, int argc, char *argv[]);
+static int at_smt50_func(int opt, int argc, char *argv[]);
 static int at_disfcntcheck_func(int opt, int argc, char *argv[]);
 static int at_dismacans_func(int opt, int argc, char *argv[]);
 static int at_rxdatatest_func(int opt, int argc, char *argv[]);
@@ -252,6 +253,7 @@ static at_cmd_t g_at_table[] = {
 		{AT_DDETECT, at_downlink_detect_func},
 		{AT_SETMAXNBTRANS, at_setmaxnbtrans_func},
 		{AT_GETSENSORVALUE, at_getsensorvalue_func},
+		{AT_SMT50, at_smt50_func},
 		{AT_DISFCNTCHECK, at_disfcntcheck_func},		
 		{AT_DISMACANS, at_dismacans_func},
 		{AT_RXDATEST,at_rxdatatest_func},
@@ -3282,6 +3284,137 @@ static int at_getsensorvalue_func(int opt, int argc, char *argv[])
 					snprintf((char *)atcmd, ATCMD_SIZE, "Get current sensor value\r\n");
 					break;
 				}
+        default: break;
+    }
+
+    return ret;
+}
+
+/* ---------------------------------------------------------------------------
+ * AT+SMT50=<mode> : Truebner SMT50 Messwerte umgerechnet ausgeben
+ *   1 = 1x SMT50: A0 Feuchte1, A1 Temp1
+ *   2 = 2x SMT50: A0 Feuchte1, A1 Temp1, A2 Feuchte2, A3 Temp2
+ *   3 = 3x SMT50: A0..A2 Feuchte1..3, A3 Temp
+ *   4 = 4x SMT50: A0..A3 Feuchte1..4
+ *   5 = 4x SMT50: A0..A3 Feuchte1..4, PA4(ADC1) Temp1, PA8(ADC3) Temp2
+ * ADS1115: PGA = +/-4.096V -> 1 LSB = 0.125mV
+ *   Feuchte %VWC = U*50/3      = raw/480
+ *   Temp    degC = (U-0.5)*100 = raw/80 - 50
+ * PA4/PA8 liefern mV:  degC = (mV-500)/10
+ * ------------------------------------------------------------------------- */
+static void smt50_print_moisture(uint8_t num, const char *pin, uint16_t raw)
+{
+	int16_t v=(int16_t)raw;
+	if(v<0)
+	{
+		v=0;
+	}
+	LOG_PRINTF(LL_DEBUG,"SMT50 #%d Moisture(%s): %.2f %%VWC\r\n",num,pin,(double)(v/480.0f));
+	delay_ms(20);
+}
+
+static void smt50_print_temp(uint8_t num, const char *pin, float temp)
+{
+	if((temp>=-40.0f)&&(temp<=100.0f))
+	{
+		LOG_PRINTF(LL_DEBUG,"SMT50 #%d Temp(%s): %.1f C\r\n",num,pin,(double)temp);
+	}
+	else
+	{
+		LOG_PRINTF(LL_DEBUG,"SMT50 #%d Temp(%s): null\r\n",num,pin);
+	}
+	delay_ms(20);
+}
+
+static float smt50_temp_from_raw(uint16_t raw)
+{
+	int16_t v=(int16_t)raw;
+	if(v<0)
+	{
+		v=0;
+	}
+	return (v/80.0f)-50.0f;
+}
+
+static float smt50_temp_from_mv(uint16_t mv)
+{
+	return (mv-500.0f)/10.0f;
+}
+
+static int at_smt50_func(int opt, int argc, char *argv[])
+{
+    int ret = LWAN_PARAM_ERROR;
+    uint8_t mode=0;
+
+    switch(opt) {
+
+        case SET_CMD: {
+            if(argc < 1) break;
+
+            mode = strtol((const char *)argv[0], NULL, 0);
+
+            if((mode>=1)&&(mode<=5))
+            {
+                sensor_t d;
+
+                getsensor_flags=1;
+                BSP_sensor_Read(&d,0,workmode);
+                getsensor_flags=0;
+
+                if((d.ads1115_ch0==0xFFFF)&&(d.ads1115_ch1==0xFFFF)&&(d.ads1115_ch2==0xFFFF)&&(d.ads1115_ch3==0xFFFF))
+                {
+                    LOG_PRINTF(LL_DEBUG,"\r\nSMT50: ADS1115 FAILED (Check Address 0x48, Pin 4 SCL, Pin 5 SDA, Pin 2 +5V!)\r\n");
+                    delay_ms(20);
+                }
+                else
+                {
+                    LOG_PRINTF(LL_DEBUG,"\r\nSMT50 mode %d\r\n",mode);
+                    delay_ms(20);
+
+                    if(mode<=2)
+                    {
+                        smt50_print_moisture(1,"A0",d.ads1115_ch0);
+                        smt50_print_temp(1,"A1",smt50_temp_from_raw(d.ads1115_ch1));
+                        if(mode==2)
+                        {
+                            smt50_print_moisture(2,"A2",d.ads1115_ch2);
+                            smt50_print_temp(2,"A3",smt50_temp_from_raw(d.ads1115_ch3));
+                        }
+                    }
+                    else
+                    {
+                        smt50_print_moisture(1,"A0",d.ads1115_ch0);
+                        smt50_print_moisture(2,"A1",d.ads1115_ch1);
+                        smt50_print_moisture(3,"A2",d.ads1115_ch2);
+                        if(mode==3)
+                        {
+                            smt50_print_temp(3,"A3",smt50_temp_from_raw(d.ads1115_ch3));
+                        }
+                        else
+                        {
+                            smt50_print_moisture(4,"A3",d.ads1115_ch3);
+                        }
+                        if(mode==5)
+                        {
+                            smt50_print_temp(1,"PA4",smt50_temp_from_mv(d.ADC_4));
+                            smt50_print_temp(2,"PA8",smt50_temp_from_mv(d.ADC_8));
+                        }
+                    }
+                }
+                atcmd[0] = '\0';
+                ret = LWAN_SUCCESS;
+            }
+            else
+                ret= LWAN_PARAM_ERROR;
+
+            break;
+        }
+
+        case DESC_CMD: {
+            ret = LWAN_SUCCESS;
+            snprintf((char *)atcmd, ATCMD_SIZE, "Get converted SMT50 values (1..5 = sensor setup)\r\n");
+            break;
+        }
         default: break;
     }
 

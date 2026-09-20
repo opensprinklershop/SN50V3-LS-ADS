@@ -13,7 +13,8 @@
  * - Byte 10-11: ADS1115 Kanal A2 (int16, raw value)
  * - Byte 12-13: ADS1115 Kanal A3 (int16, raw value)
  * 
- * ADS1115 Skalierung: 0V = 0, 5V = 32767 (unter Annahme von 5V Betriebsspannung)
+ * ADS1115 Skalierung: PGA = 001 (±4.096V Full Scale): 0V = 0, 4.096V = 32767, 1 LSB = 0.125 mV
+ * (unabhängig von der 5V-Betriebsspannung; oberhalb 4.096V sättigt der Wert bei 32767)
  * 
  * @param {Object} input - TTN/ChirpStack Uplink Message
  * @returns {Object} Dekodiertes Payload-Objekt
@@ -28,11 +29,11 @@ function decodeUplink(input) {
     decoded.battery_mv = (bytes[0] << 8) | bytes[1];
 
     // Interner ADC1 (PA4) in mV (Byte 2-3)
-    // Dieser Wert wird direkt vom Microcontroller-ADC gelesen (0..3.3V = 0..3300mV)
+    // Dieser Wert wird direkt vom Microcontroller-ADC gelesen (interne 1.2V-Referenz, nutzbar bis ca. 1.1V = 1100mV)
     decoded.adc_pa4_mv = (bytes[2] << 8) | bytes[3];
 
     // Interner ADC3 (PA8) in mV (Byte 4-5)
-    // Dieser Wert wird direkt vom Microcontroller-ADC gelesen (0..3.3V = 0..3300mV)
+    // Dieser Wert wird direkt vom Microcontroller-ADC gelesen (interne 1.2V-Referenz, nutzbar bis ca. 1.1V = 1100mV)
     decoded.adc_pa8_mv = (bytes[4] << 8) | bytes[5];
 
     /**
@@ -54,13 +55,16 @@ function decodeUplink(input) {
     var ch2_raw = readInt16(bytes[10], bytes[11]); // A2
     var ch3_raw = readInt16(bytes[12], bytes[13]); // A3
 
-    // Konvertierung zu Millivolt unter Annahme von 5V Referenzspannung
-    // Formel: mV = (raw / 32767.0) * 5000
-    // Falls ein I2C-Fehler vorliegt (Wert -1), wird null zurückgegeben
-    decoded.ads1115_a0_mv = (ch0_raw === -1) ? null : Math.round((ch0_raw / 32767.0) * 5000.0);
-    decoded.ads1115_a1_mv = (ch1_raw === -1) ? null : Math.round((ch1_raw / 32767.0) * 5000.0);
-    decoded.ads1115_a2_mv = (ch2_raw === -1) ? null : Math.round((ch2_raw / 32767.0) * 5000.0);
-    decoded.ads1115_a3_mv = (ch3_raw === -1) ? null : Math.round((ch3_raw / 32767.0) * 5000.0);
+    // I2C-Fehler: Die Firmware sendet dann auf ALLEN vier Kanälen 0xFFFF (= -1).
+    // Ein einzelnes -1 ist dagegen ein gültiger Messwert (Offset bei 0V) und wird auf 0 begrenzt.
+    var i2cError = (ch0_raw === -1 && ch1_raw === -1 && ch2_raw === -1 && ch3_raw === -1);
+
+    // Konvertierung zu Millivolt (PGA ±4.096V, 1 LSB = 0.125 mV)
+    // Formel: mV = raw * 0.125
+    decoded.ads1115_a0_mv = i2cError ? null : Math.round(Math.max(ch0_raw, 0) * 0.125);
+    decoded.ads1115_a1_mv = i2cError ? null : Math.round(Math.max(ch1_raw, 0) * 0.125);
+    decoded.ads1115_a2_mv = i2cError ? null : Math.round(Math.max(ch2_raw, 0) * 0.125);
+    decoded.ads1115_a3_mv = i2cError ? null : Math.round(Math.max(ch3_raw, 0) * 0.125);
   }
 
   return {
