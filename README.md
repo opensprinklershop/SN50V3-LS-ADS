@@ -416,6 +416,7 @@ Der Befehl `AT+SMT50=<Modus>` führt eine Messung durch (wie `AT+GETSENSORVALUE=
 | `AT+SMT50=3` | 3x SMT50 | Feuchte 1 | Feuchte 2 | Feuchte 3 | Temp 3 | - | - |
 | `AT+SMT50=4` | 4x SMT50 | Feuchte 1 | Feuchte 2 | Feuchte 3 | Feuchte 4 | - | - |
 | `AT+SMT50=5` | 4x SMT50 + Temperatur | Feuchte 1 | Feuchte 2 | Feuchte 3 | Feuchte 4 | Temp 1 | Temp 2 |
+| `AT+SMT50=6` | 3x SMT50 + Temperatur | Feuchte 1 | Feuchte 2 | Feuchte 3 | Temp 3 | Temp 1 | Temp 2 |
 
 Umrechnung (identisch zu den Payload-Decodern): Feuchte % VWC = Raw / 480, Temperatur °C = Raw / 80 − 50, für PA4/PA8: °C = (mV − 500) / 10. Temperaturen außerhalb von −40..+100 °C (z.B. offener Eingang) werden als `null` ausgegeben.
 
@@ -427,7 +428,7 @@ SMT50 #1 Temp(A1): 21.3 C
 SMT50 #2 Moisture(A2): 18.02 %VWC
 SMT50 #2 Temp(A3): 20.9 C
 ```
-Ist der ADS1115 nicht erreichbar, erscheint `SMT50: ADS1115 FAILED (...)`. Andere Werte als 1..5 liefern `AT_PARAM_ERROR`.
+Ist der ADS1115 nicht erreichbar, erscheint `SMT50: ADS1115 FAILED (...)`. Andere Werte als 1..6 liefern `AT_PARAM_ERROR`.
 
 ---
 

@@ -3275,6 +3275,7 @@ static int at_getsensorvalue_func(int opt, int argc, char *argv[])
  *   3 = 3x SMT50: A0..A2 Feuchte1..3, A3 Temp
  *   4 = 4x SMT50: A0..A3 Feuchte1..4
  *   5 = 4x SMT50: A0..A3 Feuchte1..4, PA4(ADC1) Temp1, PA8(ADC3) Temp2
+ *   6 = 3x SMT50: A0..A2 Feuchte1..3, PA4(ADC1) Temp1, PA8(ADC3) Temp2, A3 Temp3
  * ADS1115: PGA = +/-4.096V -> 1 LSB = 0.125mV
  *   Feuchte %VWC = U*50/3      = raw/480
  *   Temp    degC = (U-0.5)*100 = raw/80 - 50
@@ -3331,7 +3332,7 @@ static int at_smt50_func(int opt, int argc, char *argv[])
 
             mode = strtol((const char *)argv[0], NULL, 0);
 
-            if((mode>=1)&&(mode<=5))
+            if((mode>=1)&&(mode<=6))
             {
                 sensor_t d;
 
@@ -3368,6 +3369,12 @@ static int at_smt50_func(int opt, int argc, char *argv[])
                         {
                             smt50_print_temp(3,"A3",smt50_temp_from_raw(d.ads1115_ch3));
                         }
+                        else if(mode==6)
+                        {
+                            smt50_print_temp(1,"PA4",smt50_temp_from_mv(d.ADC_4));
+                            smt50_print_temp(2,"PA8",smt50_temp_from_mv(d.ADC_8));
+                            smt50_print_temp(3,"A3",smt50_temp_from_raw(d.ads1115_ch3));
+                        }
                         else
                         {
                             smt50_print_moisture(4,"A3",d.ads1115_ch3);
@@ -3390,7 +3397,7 @@ static int at_smt50_func(int opt, int argc, char *argv[])
 
         case DESC_CMD: {
             ret = LWAN_SUCCESS;
-            snprintf((char *)atcmd, ATCMD_SIZE, "Get converted SMT50 values (1..5 = sensor setup)\r\n");
+            snprintf((char *)atcmd, ATCMD_SIZE, "Get converted SMT50 values (1..6 = sensor setup)\r\n");
             break;
         }
         default: break;
